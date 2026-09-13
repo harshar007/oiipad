@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@oiipad/domain": ["packages/domain/src/index.ts"],
+      "@oiipad/protocol": ["packages/protocol/src/index.ts"],
+      "@oiipad/shared-types": ["packages/shared-types/src/index.ts"]
+    }
+  }
+}
