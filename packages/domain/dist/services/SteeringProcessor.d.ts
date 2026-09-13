@@ -9,6 +9,8 @@ export interface SteeringProcessResult {
 export declare class SteeringProcessor {
     private neutralOffset;
     private lastSmoothed;
+    private fusedAngle;
+    private lastTimestamp;
     constructor();
     reset(): void;
     calibrate(reading: GyroReading): void;

@@ -10,13 +10,13 @@ class SteeringConfiguration {
     responseCurve;
     maxTiltAngle;
     constructor(props = {}) {
-        this.sensitivity = typeof props.sensitivity === 'number' ? Math.max(0.1, Math.min(5.0, props.sensitivity)) : 1.0;
-        this.deadZone = typeof props.deadZone === 'number' ? Math.max(0.0, Math.min(0.5, props.deadZone)) : 0.05;
-        this.smoothing = typeof props.smoothing === 'number' ? Math.max(0.0, Math.min(0.95, props.smoothing)) : 0.25;
+        this.sensitivity = typeof props.sensitivity === 'number' ? Math.max(0.1, Math.min(5.0, props.sensitivity)) : 1.3;
+        this.deadZone = typeof props.deadZone === 'number' ? Math.max(0.0, Math.min(0.5, props.deadZone)) : 0.01;
+        this.smoothing = typeof props.smoothing === 'number' ? Math.max(0.0, Math.min(0.95, props.smoothing)) : 0.0;
         this.invert = Boolean(props.invert);
-        this.autoCenter = props.autoCenter !== undefined ? Boolean(props.autoCenter) : true;
+        this.autoCenter = props.autoCenter !== undefined ? Boolean(props.autoCenter) : false;
         this.responseCurve = props.responseCurve || 'linear';
-        this.maxTiltAngle = typeof props.maxTiltAngle === 'number' ? Math.max(0.1, props.maxTiltAngle) : 0.7; // ~40 degrees
+        this.maxTiltAngle = typeof props.maxTiltAngle === 'number' ? Math.max(0.1, props.maxTiltAngle) : 0.50; // ~28 degrees
     }
     static default() {
         return new SteeringConfiguration();

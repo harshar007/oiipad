@@ -9,7 +9,7 @@ import {
   StatusBar
 } from 'react-native';
 import { useControllerStore } from '../state/useControllerStore';
-import { Theme } from '../theme/colors';
+import { getTheme } from '../theme/colors';
 
 export const RoomLobbyScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const {
@@ -22,8 +22,12 @@ export const RoomLobbyScreen: React.FC<{ navigation: any }> = ({ navigation }) =
     setReady,
     selectGameProfile,
     leaveRoom,
-    startController
+    startController,
+    themeMode,
+    toggleTheme
   } = useControllerStore();
+
+  const theme = getTheme(themeMode);
 
   const handleStartGameplay = async () => {
     await startController();
@@ -36,43 +40,85 @@ export const RoomLobbyScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   };
 
   const profiles = [
-    { id: 'bbr1', label: 'Beach Buggy Racing 1', icon: '🏎️' },
-    { id: 'bbr2', label: 'Beach Buggy Racing 2', icon: '🚀' },
-    { id: 'standard', label: 'Standard Gamepad', icon: '🎮' }
+    { id: 'bbr1', label: 'Beach Buggy Racing 1', icon: '🏎️', desc: 'Single item, boost & drift HUD' },
+    { id: 'bbr2', label: 'Beach Buggy Racing 2', icon: '🚀', desc: 'Dual powerups & driver special' },
+    { id: 'standard', label: 'Universal Gamepad', icon: '🎮', desc: '8-way D-Pad & ABXY diamond cluster' }
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={Theme.colors.bgRoot} />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.bgRoot }]}>
+      <StatusBar
+        barStyle={themeMode === 'dark' ? 'light-content' : 'dark-content'}
+        backgroundColor={theme.colors.bgRoot}
+      />
+
+      {/* Top Navbar Row */}
+      <View style={[styles.navBar, { borderBottomColor: theme.colors.border }]}>
+        <TouchableOpacity style={styles.backLink} onPress={handleLeave}>
+          <Text style={[styles.backLinkText, { color: theme.colors.primary }]}>← Home</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.themeToggleBtn, { backgroundColor: theme.colors.bgCard, borderColor: theme.colors.border }]}
+          onPress={toggleTheme}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.themeToggleIcon}>{themeMode === 'dark' ? '☀️' : '🌙'}</Text>
+          <Text style={[styles.themeToggleLabel, { color: theme.colors.textPrimary }]}>
+            {themeMode === 'dark' ? 'Light' : 'Dark'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Lobby Header */}
-        <View style={styles.header}>
-          <Text style={styles.lobbyLabel}>ACTIVE RACE ROOM</Text>
-          <Text style={styles.roomCodeText}>{roomCode}</Text>
-          <View style={styles.slotPill}>
-            <Text style={styles.slotBadgeText}>🎮 Assigned: Player {playerSlot ?? '?'}</Text>
+        {/* Lobby Header Card */}
+        <View style={[styles.headerCard, { backgroundColor: theme.colors.bgCard, borderColor: theme.colors.border }]}>
+          <Text style={[styles.lobbyLabel, { color: theme.colors.primary }]}>MULTIPLAYER ROOM</Text>
+          <Text style={[styles.roomCodeText, { color: theme.colors.textPrimary }]}>{roomCode}</Text>
+          <View style={[styles.slotPill, { backgroundColor: theme.colors.primaryContainer }]}>
+            <Text style={[styles.slotBadgeText, { color: theme.colors.onPrimaryContainer }]}>
+              Assigned: Player {playerSlot ?? '?'}
+            </Text>
           </View>
         </View>
 
         {/* Game Profile Selection */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Select Game Profile</Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
+            Select Controller Template
+          </Text>
           <View style={styles.profileRow}>
             {profiles.map((p) => {
               const isSelected = gameProfile === p.id;
               return (
                 <TouchableOpacity
                   key={p.id}
-                  style={[styles.profileChip, isSelected && styles.profileChipActive]}
+                  style={[
+                    styles.profileChip,
+                    {
+                      backgroundColor: isSelected ? theme.colors.primaryContainer : theme.colors.bgCard,
+                      borderColor: isSelected ? theme.colors.primary : theme.colors.border
+                    }
+                  ]}
                   onPress={() => selectGameProfile(p.id)}
                   activeOpacity={0.8}
                 >
                   <Text style={styles.profileIcon}>{p.icon}</Text>
-                  <Text style={[styles.profileText, isSelected && styles.profileTextActive]}>
-                    {p.label}
-                  </Text>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[
+                        styles.profileText,
+                        { color: isSelected ? theme.colors.onPrimaryContainer : theme.colors.textPrimary }
+                      ]}
+                    >
+                      {p.label}
+                    </Text>
+                    <Text style={[styles.profileDesc, { color: theme.colors.textMuted }]}>
+                      {p.desc}
+                    </Text>
+                  </View>
                   {isSelected ? (
-                    <View style={styles.activeCheck}>
+                    <View style={[styles.activeCheck, { backgroundColor: theme.colors.primary }]}>
                       <Text style={styles.checkText}>✓</Text>
                     </View>
                   ) : null}
@@ -84,7 +130,9 @@ export const RoomLobbyScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
         {/* 4-Player Slot Grid */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Multiplayer Slots (1–4)</Text>
+          <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]}>
+            Room Roster (1–4 Players)
+          </Text>
           <View style={styles.slotsGrid}>
             {[1, 2, 3, 4].map((slotNum) => {
               const playerInSlot = players.find((p) => p.slot === slotNum);
@@ -95,29 +143,42 @@ export const RoomLobbyScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                   key={slotNum}
                   style={[
                     styles.slotCard,
-                    playerInSlot ? styles.slotCardOccupied : styles.slotCardEmpty,
-                    isMe && styles.slotCardSelf
+                    {
+                      backgroundColor: isMe ? theme.colors.bgCardHover : theme.colors.bgCard,
+                      borderColor: isMe ? theme.colors.primary : playerInSlot ? theme.colors.primaryLight : theme.colors.border,
+                      opacity: playerInSlot ? 1.0 : 0.6
+                    }
                   ]}
                 >
                   <View style={styles.slotHeader}>
-                    <Text style={[styles.slotNumber, isMe && styles.slotNumberSelf]}>
+                    <Text
+                      style={[
+                        styles.slotNumber,
+                        { color: isMe ? theme.colors.primary : theme.colors.textMuted }
+                      ]}
+                    >
                       P{slotNum}
                     </Text>
                     {playerInSlot?.readyState ? (
-                      <View style={styles.readyBadge}>
-                        <Text style={styles.readyText}>READY</Text>
+                      <View style={[styles.readyBadge, { backgroundColor: theme.colors.onlineBg }]}>
+                        <Text style={[styles.readyText, { color: theme.colors.online }]}>READY</Text>
                       </View>
                     ) : playerInSlot ? (
-                      <View style={styles.waitingBadge}>
-                        <Text style={styles.waitingText}>JOINED</Text>
+                      <View style={[styles.waitingBadge, { backgroundColor: theme.colors.bgSubtle }]}>
+                        <Text style={[styles.waitingText, { color: theme.colors.textSecondary }]}>JOINED</Text>
                       </View>
                     ) : null}
                   </View>
 
-                  <Text style={styles.slotPlayerName} numberOfLines={1}>
-                    {playerInSlot ? playerInSlot.name : 'Waiting for phone...'}
+                  <Text
+                    style={[styles.slotPlayerName, { color: theme.colors.textPrimary }]}
+                    numberOfLines={1}
+                  >
+                    {playerInSlot ? playerInSlot.name : 'Waiting...'}
                   </Text>
-                  {isMe ? <Text style={styles.selfTag}>★ YOU</Text> : null}
+                  {isMe ? (
+                    <Text style={[styles.selfTag, { color: theme.colors.primary }]}>★ YOU</Text>
+                  ) : null}
                 </View>
               );
             })}
@@ -127,28 +188,31 @@ export const RoomLobbyScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         {/* Action Controls */}
         <View style={styles.buttonGroup}>
           <TouchableOpacity
-            style={[styles.readyButton, isReady ? styles.readyButtonActive : styles.readyButtonInactive]}
+            style={[
+              styles.readyButton,
+              isReady
+                ? { backgroundColor: theme.colors.onlineBg, borderColor: theme.colors.online }
+                : { backgroundColor: theme.colors.bgCard, borderColor: theme.colors.border }
+            ]}
             onPress={() => setReady(!isReady)}
             activeOpacity={0.8}
           >
-            <Text style={styles.readyButtonText}>
+            <Text
+              style={[
+                styles.readyButtonText,
+                { color: isReady ? theme.colors.online : theme.colors.textSecondary }
+              ]}
+            >
               {isReady ? '✓ READY TO RACE' : 'MARK AS READY'}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.playButton}
+            style={[styles.playButton, { backgroundColor: theme.colors.primary }]}
             onPress={handleStartGameplay}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
-            <Text style={styles.playButtonText}>START CONTROLLER 🚀</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.leaveButton}
-            onPress={handleLeave}
-          >
-            <Text style={styles.leaveButtonText}>← Leave Room</Text>
+            <Text style={styles.playButtonText}>LAUNCH CONTROLLER 🚀</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -158,96 +222,109 @@ export const RoomLobbyScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: Theme.colors.bgRoot
+    flex: 1
+  },
+  navBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1
+  },
+  backLink: {
+    paddingVertical: 4
+  },
+  backLinkText: {
+    fontSize: 14,
+    fontWeight: '800'
+  },
+  themeToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: 6
+  },
+  themeToggleIcon: {
+    fontSize: 14
+  },
+  themeToggleLabel: {
+    fontSize: 12,
+    fontWeight: '800'
   },
   content: {
     padding: 20
   },
-  header: {
+  headerCard: {
+    borderRadius: 20,
+    padding: 20,
     alignItems: 'center',
-    marginBottom: 20
+    marginBottom: 20,
+    borderWidth: 1,
+    elevation: 2
   },
   lobbyLabel: {
     fontSize: 11,
     fontWeight: '800',
-    color: Theme.colors.lavender,
     letterSpacing: 2
   },
   roomCodeText: {
-    fontSize: 42,
+    fontSize: 40,
     fontWeight: '900',
-    color: Theme.colors.white,
     letterSpacing: 6,
     marginVertical: 4
   },
   slotPill: {
-    backgroundColor: Theme.colors.bgCard,
     paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: Theme.colors.primaryLight
+    paddingVertical: 5,
+    borderRadius: 20
   },
   slotBadgeText: {
-    fontSize: 13,
-    color: Theme.colors.lavender,
+    fontSize: 12,
     fontWeight: '800'
   },
   section: {
-    marginBottom: 22
+    marginBottom: 20
   },
   sectionTitle: {
     fontSize: 13,
     fontWeight: '800',
-    color: Theme.colors.textSecondary,
-    marginBottom: 10,
-    letterSpacing: 0.5
+    marginBottom: 10
   },
   profileRow: {
     gap: 8
   },
   profileChip: {
-    backgroundColor: Theme.colors.bgCard,
     padding: 14,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: Theme.colors.border,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10
-  },
-  profileChipActive: {
-    borderColor: Theme.colors.primaryGlow,
-    backgroundColor: Theme.colors.bgCardHover,
-    shadowColor: Theme.colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6
+    gap: 12
   },
   profileIcon: {
-    fontSize: 18
+    fontSize: 22
   },
   profileText: {
-    color: Theme.colors.textMuted,
-    fontWeight: '700',
-    fontSize: 14,
-    flex: 1
+    fontWeight: '800',
+    fontSize: 14
   },
-  profileTextActive: {
-    color: Theme.colors.white,
-    fontWeight: '900'
+  profileDesc: {
+    fontSize: 11,
+    marginTop: 2
   },
   activeCheck: {
-    backgroundColor: Theme.colors.primary,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     justifyContent: 'center',
     alignItems: 'center'
   },
   checkText: {
-    color: Theme.colors.white,
+    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '900'
   },
@@ -259,23 +336,10 @@ const styles = StyleSheet.create({
   slotCard: {
     width: '48%',
     padding: 14,
-    borderRadius: 14,
+    borderRadius: 16,
     minHeight: 85,
     justifyContent: 'space-between',
     borderWidth: 1.5
-  },
-  slotCardEmpty: {
-    backgroundColor: Theme.colors.bgCard,
-    borderColor: Theme.colors.border,
-    opacity: 0.5
-  },
-  slotCardOccupied: {
-    backgroundColor: Theme.colors.bgCard,
-    borderColor: Theme.colors.borderActive
-  },
-  slotCardSelf: {
-    borderColor: Theme.colors.primaryGlow,
-    backgroundColor: Theme.colors.bgCardHover
   },
   slotHeader: {
     flexDirection: 'row',
@@ -284,49 +348,37 @@ const styles = StyleSheet.create({
   },
   slotNumber: {
     fontSize: 14,
-    fontWeight: '900',
-    color: Theme.colors.textMuted
-  },
-  slotNumberSelf: {
-    color: Theme.colors.lavender
+    fontWeight: '900'
   },
   readyBadge: {
-    backgroundColor: Theme.colors.onlineBg,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: Theme.colors.online
+    borderRadius: 6
   },
   readyText: {
     fontSize: 9,
-    fontWeight: '900',
-    color: Theme.colors.white
+    fontWeight: '900'
   },
   waitingBadge: {
-    backgroundColor: '#3b2164',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6
   },
   waitingText: {
     fontSize: 9,
-    fontWeight: '800',
-    color: Theme.colors.lavender
+    fontWeight: '800'
   },
   slotPlayerName: {
-    color: Theme.colors.white,
     fontSize: 14,
     fontWeight: '700',
     marginTop: 6
   },
   selfTag: {
     fontSize: 11,
-    fontWeight: '900',
-    color: Theme.colors.primaryGlow
+    fontWeight: '900'
   },
   buttonGroup: {
-    marginTop: 8,
+    marginTop: 6,
     gap: 10
   },
   readyButton: {
@@ -335,42 +387,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1.5
   },
-  readyButtonActive: {
-    backgroundColor: Theme.colors.onlineBg,
-    borderColor: Theme.colors.online
-  },
-  readyButtonInactive: {
-    backgroundColor: Theme.colors.bgCard,
-    borderColor: Theme.colors.border
-  },
   readyButtonText: {
-    color: Theme.colors.white,
     fontSize: 15,
-    fontWeight: '900'
+    fontWeight: '800'
   },
   playButton: {
-    backgroundColor: Theme.colors.primary,
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: 'center',
-    shadowColor: Theme.colors.primaryGlow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10
+    elevation: 4
   },
   playButtonText: {
-    color: Theme.colors.white,
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '900',
-    letterSpacing: 1.5
-  },
-  leaveButton: {
-    alignItems: 'center',
-    paddingVertical: 10
-  },
-  leaveButtonText: {
-    color: Theme.colors.textDim,
-    fontSize: 13,
-    fontWeight: '700'
+    letterSpacing: 1
   }
 });

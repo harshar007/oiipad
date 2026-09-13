@@ -27,7 +27,10 @@ export class GynooWebSocketServer {
             resolve(currentPort);
           });
 
-          wss.on('connection', (socket) => {
+          wss.on('connection', (socket: any) => {
+            if (socket._socket && typeof socket._socket.setNoDelay === 'function') {
+              socket._socket.setNoDelay(true);
+            }
             this.messageHandler.handleConnection(socket);
           });
 

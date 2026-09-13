@@ -8,164 +8,207 @@ import {
   SafeAreaView
 } from 'react-native';
 import { useControllerStore } from '../state/useControllerStore';
-import { Theme } from '../theme/colors';
+import { getTheme } from '../theme/colors';
+import { Bbr1Template } from '../components/templates/Bbr1Template';
+import { Bbr2Template } from '../components/templates/Bbr2Template';
+import { UniversalGamepadTemplate } from '../components/templates/UniversalGamepadTemplate';
 
 export const BbrControllerScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const {
     playerSlot,
     gameProfile,
+    selectGameProfile,
     liveSteering,
     calibrate,
     setButtonState,
-    stopController
+    startController,
+    stopController,
+    themeMode,
+    toggleTheme,
+    latencyMs,
+    claimScreen
   } = useControllerStore();
 
+  const theme = getTheme(themeMode);
+  const [activeTemplate, setActiveTemplate] = useState<'bbr1' | 'bbr2' | 'standard'>(
+    (gameProfile as any) || 'bbr1'
+  );
   const [showHint, setShowHint] = useState(true);
+  const [calibToast, setCalibToast] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowHint(false), 4000);
-    return () => clearTimeout(timer);
+    startController();
+    const timer = setTimeout(() => setShowHint(false), 3500);
+    const calibTimer = setTimeout(() => setCalibToast(false), 2200);
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(calibTimer);
+      stopController();
+    };
   }, []);
+
+  const handleManualCalibrate = () => {
+    calibrate();
+    setCalibToast(true);
+    setTimeout(() => setCalibToast(false), 1800);
+  };
+
+  useEffect(() => {
+    if (gameProfile === 'bbr2' || gameProfile === 'standard' || gameProfile === 'bbr1') {
+      setActiveTemplate(gameProfile as any);
+    }
+  }, [gameProfile]);
 
   const handleExit = async () => {
     await stopController();
     navigation.goBack();
   };
 
-  // Convert steering [-1.0, 1.0] to visual percentage for the steering bar
-  const steeringPercent = Math.round((liveSteering + 1.0) * 50);
+  const handleSelectTemplate = (id: 'bbr1' | 'bbr2' | 'standard') => {
+    setActiveTemplate(id);
+    selectGameProfile(id);
+  };
+
+  // Latency Color
+  const latencyColor = latencyMs < 15 ? '#10B981' : latencyMs < 50 ? '#F59E0B' : '#EF4444';
+  const latencyBg = latencyMs < 15 ? '#064E3B' : latencyMs < 50 ? '#78350F' : '#7F1D1D';
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.bgRoot }]}>
       <StatusBar hidden={true} />
 
-      {/* Sleek Top Header Bar */}
-      <View style={styles.topBar}>
+      {/* Top Header Bar */}
+      <View style={[styles.topBar, { backgroundColor: theme.colors.bgCard, borderBottomColor: theme.colors.border }]}>
+        {/* Brand & Player Slot */}
         <View style={styles.headerLeft}>
-          <Text style={styles.brandTitle}>GYNOO</Text>
-          <View style={styles.profileBadge}>
-            <Text style={styles.profileText}>
-              {gameProfile === 'bbr2' ? 'BBR 2' : gameProfile === 'standard' ? 'GAMEPAD' : 'BBR 1'}
+          <Text style={[styles.brandTitle, { color: theme.colors.textPrimary }]}>GYNOO</Text>
+          <View style={[styles.playerBadge, { backgroundColor: theme.colors.primary }]}>
+            <Text style={styles.playerText}>P{playerSlot ?? 1}</Text>
+          </View>
+          
+          {/* Live High-Visibility Latency Pill */}
+          <View style={[styles.latencyPill, { backgroundColor: latencyBg, borderColor: latencyColor }]}>
+            <Text style={[styles.latencyDot, { color: latencyColor }]}>●</Text>
+            <Text style={[styles.latencyText, { color: '#FFFFFF' }]}>
+              {latencyMs} ms
             </Text>
           </View>
         </View>
 
-        {/* Glowing Steering Meter */}
-        <View style={styles.steeringMeterContainer}>
-          <View style={styles.steeringTrack}>
-            <View style={styles.steeringCenterMark} />
-            <View
-              style={[
-                styles.steeringIndicator,
-                { left: `${Math.max(0, Math.min(92, steeringPercent))}%` }
-              ]}
-            />
-          </View>
-          <Text style={styles.steeringValueText}>
-            STEER: {liveSteering > 0 ? `+${liveSteering.toFixed(2)}` : liveSteering.toFixed(2)}
-          </Text>
+        {/* Quick Template Switcher Chips */}
+        <View style={styles.templateSwitcher}>
+          <TouchableOpacity
+            style={[
+              styles.templateChip,
+              activeTemplate === 'bbr1' && { backgroundColor: theme.colors.primaryContainer, borderColor: theme.colors.primary }
+            ]}
+            onPress={() => handleSelectTemplate('bbr1')}
+          >
+            <Text style={[styles.templateChipText, { color: activeTemplate === 'bbr1' ? theme.colors.onPrimaryContainer : theme.colors.textMuted }]}>
+              BBR 1
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.templateChip,
+              activeTemplate === 'bbr2' && { backgroundColor: theme.colors.primaryContainer, borderColor: theme.colors.primary }
+            ]}
+            onPress={() => handleSelectTemplate('bbr2')}
+          >
+            <Text style={[styles.templateChipText, { color: activeTemplate === 'bbr2' ? theme.colors.onPrimaryContainer : theme.colors.textMuted }]}>
+              BBR 2
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.templateChip,
+              activeTemplate === 'standard' && { backgroundColor: theme.colors.primaryContainer, borderColor: theme.colors.primary }
+            ]}
+            onPress={() => handleSelectTemplate('standard')}
+          >
+            <Text style={[styles.templateChipText, { color: activeTemplate === 'standard' ? theme.colors.onPrimaryContainer : theme.colors.textMuted }]}>
+              GAMEPAD
+            </Text>
+          </TouchableOpacity>
         </View>
 
+        {/* Right Tools (Claim Screen, Theme Toggle, Calibrate, Exit) */}
         <View style={styles.headerRight}>
-          <View style={styles.playerBadge}>
-            <Text style={styles.playerText}>PLAYER {playerSlot ?? 1}</Text>
-          </View>
-          <TouchableOpacity style={styles.iconButton} onPress={calibrate}>
-            <Text style={styles.iconText}>🎯</Text>
+          {/* Direct Claim Screen Button for Beach Buggy Racing */}
+          <TouchableOpacity
+            style={[styles.claimScreenBtn, { backgroundColor: '#10B981' }]}
+            onPress={claimScreen}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.claimScreenText}>JOIN SCREEN 🎮</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton} onPress={handleExit}>
-            <Text style={styles.iconClose}>✕</Text>
+
+          <TouchableOpacity
+            style={[styles.toolIconBtn, { backgroundColor: theme.colors.bgInput }]}
+            onPress={toggleTheme}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.toolIconText}>{themeMode === 'dark' ? '☀️' : '🌙'}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.toolIconBtn, { backgroundColor: theme.colors.bgInput }]}
+            onPress={handleManualCalibrate}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.toolIconText}>🎯</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.toolIconBtn, { backgroundColor: theme.colors.errorBg }]}
+            onPress={handleExit}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.toolIconText, { color: theme.colors.error, fontWeight: '900' }]}>✕</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {showHint ? (
-        <View style={styles.hintBanner}>
-          <Text style={styles.hintText}>🏎️ TILT PHONE LEFT & RIGHT TO STEER</Text>
+      {calibToast ? (
+        <View style={[styles.hintBanner, { backgroundColor: '#10B981' }]}>
+          <Text style={styles.hintText}>🎯 AUTO-CALIBRATED • 0° NEUTRAL CENTER LOCKED</Text>
+        </View>
+      ) : showHint ? (
+        <View style={[styles.hintBanner, { backgroundColor: theme.colors.primaryDark }]}>
+          <Text style={styles.hintText}>🏎️ TILT PHONE TO STEER • ULTRA LOW LATENCY {latencyMs}ms</Text>
         </View>
       ) : null}
 
-      {/* Main Controller Surface */}
-      <View style={styles.controlSurface}>
-        {/* Left Thumb Zone: BRAKE & HANDBRAKE */}
-        <View style={styles.leftControlZone}>
-          <TouchableOpacity
-            style={styles.handbrakeButton}
-            activeOpacity={0.7}
-            onPressIn={() => setButtonState({ handbrake: true })}
-            onPressOut={() => setButtonState({ handbrake: false })}
-          >
-            <Text style={styles.handbrakeText}>HANDBRAKE (RB)</Text>
-          </TouchableOpacity>
+      {/* Active Gamepad Template Content */}
+      <View style={styles.contentArea}>
+        {activeTemplate === 'bbr1' && (
+          <Bbr1Template
+            theme={theme}
+            liveSteering={liveSteering}
+            calibrate={calibrate}
+            setButtonState={setButtonState}
+          />
+        )}
 
-          <TouchableOpacity
-            style={styles.brakeButton}
-            activeOpacity={0.8}
-            onPressIn={() => setButtonState({ brake: 1.0 })}
-            onPressOut={() => setButtonState({ brake: 0.0 })}
-          >
-            <Text style={styles.brakeIcon}>🛑</Text>
-            <Text style={styles.brakeText}>BRAKE / REVERSE</Text>
-          </TouchableOpacity>
-        </View>
+        {activeTemplate === 'bbr2' && (
+          <Bbr2Template
+            theme={theme}
+            liveSteering={liveSteering}
+            calibrate={calibrate}
+            setButtonState={setButtonState}
+          />
+        )}
 
-        {/* Center Zone: Pause & Recalibrate */}
-        <View style={styles.centerControlZone}>
-          <TouchableOpacity
-            style={styles.centerButton}
-            activeOpacity={0.7}
-            onPressIn={() => setButtonState({ pause: true })}
-            onPressOut={() => setButtonState({ pause: false })}
-          >
-            <Text style={styles.centerButtonText}>PAUSE</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.recalibrateButton}
-            onPress={calibrate}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.recalibrateText}>CALIBRATE</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Right Thumb Zone: ACCELERATE, POWER-UP & SPECIAL BOOST */}
-        <View style={styles.rightControlZone}>
-          <View style={styles.topRightRow}>
-            {/* Boost Special Ability */}
-            <TouchableOpacity
-              style={styles.boostButton}
-              activeOpacity={0.7}
-              onPressIn={() => setButtonState({ boost: true })}
-              onPressOut={() => setButtonState({ boost: false })}
-            >
-              <Text style={styles.boostIcon}>⚡</Text>
-              <Text style={styles.boostText}>BOOST (Y)</Text>
-            </TouchableOpacity>
-
-            {/* Power-Up Item */}
-            <TouchableOpacity
-              style={styles.powerUpButton}
-              activeOpacity={0.7}
-              onPressIn={() => setButtonState({ powerUp: true })}
-              onPressOut={() => setButtonState({ powerUp: false })}
-            >
-              <Text style={styles.powerUpIcon}>💥</Text>
-              <Text style={styles.powerUpText}>POWER-UP (A)</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Large Gas / Accelerate Pad in Raven Purple */}
-          <TouchableOpacity
-            style={styles.accelerateButton}
-            activeOpacity={0.8}
-            onPressIn={() => setButtonState({ accelerate: 1.0 })}
-            onPressOut={() => setButtonState({ accelerate: 0.0 })}
-          >
-            <Text style={styles.accelerateIcon}>🏁</Text>
-            <Text style={styles.accelerateText}>ACCELERATE (RT)</Text>
-          </TouchableOpacity>
-        </View>
+        {activeTemplate === 'standard' && (
+          <UniversalGamepadTemplate
+            theme={theme}
+            liveSteering={liveSteering}
+            calibrate={calibrate}
+            setButtonState={setButtonState}
+          />
+        )}
       </View>
     </SafeAreaView>
   );
@@ -173,265 +216,107 @@ export const BbrControllerScreen: React.FC<{ navigation: any }> = ({ navigation 
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#090412'
+    flex: 1
   },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: Theme.colors.bgCard,
-    borderBottomWidth: 1.5,
-    borderBottomColor: Theme.colors.border
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderBottomWidth: 1
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8
+    gap: 6
   },
   brandTitle: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '900',
-    color: Theme.colors.white,
-    letterSpacing: 2
+    letterSpacing: 1.5
   },
-  profileBadge: {
-    backgroundColor: '#261245',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: Theme.colors.borderActive
+  playerBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6
   },
-  profileText: {
+  playerText: {
     fontSize: 10,
-    fontWeight: '800',
-    color: Theme.colors.lavender
+    fontWeight: '900',
+    color: '#FFFFFF'
   },
-  steeringMeterContainer: {
-    flex: 1,
-    maxWidth: 240,
-    marginHorizontal: 12,
+  latencyPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 10,
+    borderWidth: 1,
+    gap: 4
+  },
+  latencyDot: {
+    fontSize: 8
+  },
+  latencyText: {
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.5
+  },
+  templateSwitcher: {
+    flexDirection: 'row',
+    gap: 6,
     alignItems: 'center'
   },
-  steeringTrack: {
-    width: '100%',
-    height: 12,
-    backgroundColor: '#090412',
-    borderRadius: 6,
-    overflow: 'hidden',
-    position: 'relative',
+  templateChip: {
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: Theme.colors.border
+    borderColor: 'transparent'
   },
-  steeringCenterMark: {
-    position: 'absolute',
-    left: '50%',
-    top: 0,
-    bottom: 0,
-    width: 2,
-    backgroundColor: Theme.colors.borderActive
-  },
-  steeringIndicator: {
-    position: 'absolute',
-    top: 1,
-    bottom: 1,
-    width: 16,
-    backgroundColor: Theme.colors.primaryLight,
-    borderRadius: 4,
-    shadowColor: Theme.colors.primaryGlow,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 6
-  },
-  steeringValueText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: Theme.colors.textMuted,
-    marginTop: 2,
-    letterSpacing: 0.5
+  templateChipText: {
+    fontSize: 10,
+    fontWeight: '800'
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8
+    gap: 5
   },
-  playerBadge: {
-    backgroundColor: Theme.colors.primary,
+  claimScreenBtn: {
     paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6
+    paddingVertical: 5,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
-  playerText: {
-    fontSize: 11,
-    fontWeight: '900',
-    color: Theme.colors.white
+  claimScreenText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '900'
   },
-  iconButton: {
-    padding: 6
+  toolIconBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
-  iconText: {
-    fontSize: 16
-  },
-  iconClose: {
-    fontSize: 16,
-    color: Theme.colors.white,
-    fontWeight: '800'
+  toolIconText: {
+    fontSize: 13
   },
   hintBanner: {
-    backgroundColor: Theme.colors.primaryDark,
-    paddingVertical: 6,
+    paddingVertical: 3,
     alignItems: 'center'
   },
   hintText: {
-    color: Theme.colors.white,
-    fontSize: 12,
+    color: '#FFFFFF',
+    fontSize: 10,
     fontWeight: '900',
-    letterSpacing: 1
+    letterSpacing: 0.5
   },
-  controlSurface: {
-    flex: 1,
-    flexDirection: 'row',
-    padding: 12,
-    gap: 12
-  },
-  leftControlZone: {
-    flex: 2,
-    justifyContent: 'space-between',
-    gap: 10
-  },
-  handbrakeButton: {
-    backgroundColor: '#1d0e33',
-    paddingVertical: 14,
-    borderRadius: 14,
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: Theme.colors.borderActive
-  },
-  handbrakeText: {
-    color: Theme.colors.white,
-    fontSize: 12,
-    fontWeight: '900'
-  },
-  brakeButton: {
-    flex: 1,
-    backgroundColor: Theme.colors.brake,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: Theme.colors.brakeGlow,
-    shadowColor: Theme.colors.brake,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8
-  },
-  brakeIcon: {
-    fontSize: 32,
-    marginBottom: 4
-  },
-  brakeText: {
-    color: Theme.colors.white,
-    fontSize: 16,
-    fontWeight: '900'
-  },
-  centerControlZone: {
-    flex: 1,
-    justifyContent: 'space-around',
-    alignItems: 'center'
-  },
-  centerButton: {
-    backgroundColor: Theme.colors.bgCard,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: Theme.colors.border
-  },
-  centerButtonText: {
-    color: Theme.colors.white,
-    fontSize: 11,
-    fontWeight: '800'
-  },
-  recalibrateButton: {
-    backgroundColor: Theme.colors.primaryDark,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Theme.colors.primaryLight
-  },
-  recalibrateText: {
-    color: Theme.colors.white,
-    fontSize: 11,
-    fontWeight: '900'
-  },
-  rightControlZone: {
-    flex: 3,
-    justifyContent: 'space-between',
-    gap: 10
-  },
-  topRightRow: {
-    flexDirection: 'row',
-    gap: 10,
-    height: 70
-  },
-  boostButton: {
-    flex: 1,
-    backgroundColor: '#b45309',
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: Theme.colors.boost
-  },
-  boostIcon: {
-    fontSize: 20
-  },
-  boostText: {
-    color: Theme.colors.white,
-    fontSize: 11,
-    fontWeight: '900'
-  },
-  powerUpButton: {
-    flex: 1,
-    backgroundColor: '#0e7490',
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: Theme.colors.powerUp
-  },
-  powerUpIcon: {
-    fontSize: 20
-  },
-  powerUpText: {
-    color: Theme.colors.white,
-    fontSize: 11,
-    fontWeight: '900'
-  },
-  accelerateButton: {
-    flex: 1,
-    backgroundColor: Theme.colors.primary,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: Theme.colors.primaryGlow,
-    shadowColor: Theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10
-  },
-  accelerateIcon: {
-    fontSize: 32,
-    marginBottom: 4
-  },
-  accelerateText: {
-    color: Theme.colors.white,
-    fontSize: 16,
-    fontWeight: '900'
+  contentArea: {
+    flex: 1
   }
 });

@@ -55,6 +55,8 @@ async function bootstrap() {
     const localIps = NetworkUtils_js_1.NetworkUtils.getLocalIpAddresses();
     const primaryIp = NetworkUtils_js_1.NetworkUtils.getPrimaryLocalIp();
     const connectUri = `gynoo://${primaryIp}:${actualPort}/${initialRoom.code.value}`;
+    console.log(`[PORT] ${actualPort}`);
+    console.log(`[STATUS] ONLINE`);
     console.log(`
   [+] Server Status : ONLINE
   [+] Active Room   : ${initialRoom.code.value}

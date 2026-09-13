@@ -7,6 +7,7 @@ import { BbrControllerScreen } from '../screens/BbrControllerScreen';
 import { GyroTestScreen } from '../screens/GyroTestScreen';
 import { FindPcScreen } from '../screens/FindPcScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
+import { QrScannerScreen } from '../screens/QrScannerScreen';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -15,6 +16,7 @@ export type RootStackParamList = {
   GyroTest: undefined;
   FindPc: undefined;
   Settings: undefined;
+  QrScanner: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -36,6 +38,7 @@ export const RootNavigator: React.FC = () => {
         <Stack.Screen name="GyroTest" component={GyroTestScreen} />
         <Stack.Screen name="FindPc" component={FindPcScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
+        <Stack.Screen name="QrScanner" component={QrScannerScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

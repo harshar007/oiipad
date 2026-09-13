@@ -26,6 +26,9 @@ class GynooWebSocketServer {
                         resolve(currentPort);
                     });
                     wss.on('connection', (socket) => {
+                        if (socket._socket && typeof socket._socket.setNoDelay === 'function') {
+                            socket._socket.setNoDelay(true);
+                        }
                         this.messageHandler.handleConnection(socket);
                     });
                     wss.on('error', (error) => {

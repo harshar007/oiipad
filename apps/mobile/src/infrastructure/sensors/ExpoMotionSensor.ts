@@ -8,8 +8,10 @@ export class ExpoMotionSensor implements MotionSensorPort {
 
   public async isAvailable(): Promise<boolean> {
     try {
-      const { DeviceMotion } = require('expo-sensors');
-      return await DeviceMotion.isAvailableAsync();
+      const { Accelerometer, DeviceMotion } = require('expo-sensors');
+      const accelAvail = await Accelerometer?.isAvailableAsync?.().catch(() => false);
+      const motionAvail = await DeviceMotion?.isAvailableAsync?.().catch(() => false);
+      return Boolean(accelAvail || motionAvail);
     } catch {
       return false;
     }
@@ -19,39 +21,69 @@ export class ExpoMotionSensor implements MotionSensorPort {
     if (this.isRunning) return;
 
     try {
-      const { DeviceMotion } = require('expo-sensors');
-      DeviceMotion.setUpdateInterval(updateIntervalMs);
+      const { Accelerometer, DeviceMotion } = require('expo-sensors');
 
-      this.subscription = DeviceMotion.addListener((motionData: any) => {
-        // In landscape mode with phone held horizontally:
-        // rotation.gamma or accelerationIncludingGravity.y corresponds to the steering tilt
-        const gamma = motionData.rotation?.gamma ?? motionData.accelerationIncludingGravity?.y ?? 0;
-        const beta = motionData.rotation?.beta ?? motionData.accelerationIncludingGravity?.x ?? 0;
-        const alpha = motionData.rotation?.alpha ?? motionData.accelerationIncludingGravity?.z ?? 0;
+      // Primary: Accelerometer provides ultra-low latency, 60Hz-100Hz hardware gravity tracking
+      if (Accelerometer && typeof Accelerometer.addListener === 'function') {
+        Accelerometer.setUpdateInterval(updateIntervalMs);
 
-        const reading = new GyroReading({
-          x: beta,
-          y: gamma,
-          z: alpha,
-          timestamp: Date.now()
+        this.subscription = Accelerometer.addListener((data: { x: number; y: number; z: number }) => {
+          const rawX = typeof data.x === 'number' ? data.x : 0;
+          const rawY = typeof data.y === 'number' ? data.y : 0;
+          const rawZ = typeof data.z === 'number' ? data.z : 0;
+
+          // 3D gravity vector normalization for 100% accurate tilt extraction
+          const mag = Math.sqrt(rawX * rawX + rawY * rawY + rawZ * rawZ);
+          const tiltY = mag > 0.05 ? (rawY / mag) : (Math.abs(rawY) > 2.0 ? (rawY / 9.81) : rawY);
+
+          const reading = new GyroReading({
+            x: rawX,
+            y: tiltY,
+            z: rawZ,
+            timestamp: Date.now()
+          });
+
+          this.currentReading = reading;
+          for (const listener of this.listeners) {
+            listener(reading);
+          }
         });
+      } else if (DeviceMotion && typeof DeviceMotion.addListener === 'function') {
+        DeviceMotion.setUpdateInterval(updateIntervalMs);
 
-        this.currentReading = reading;
-        for (const listener of this.listeners) {
-          listener(reading);
-        }
-      });
+        this.subscription = DeviceMotion.addListener((motionData: any) => {
+          const rawX = motionData.accelerationIncludingGravity?.x ?? motionData.rotation?.beta ?? 0;
+          const rawY = motionData.accelerationIncludingGravity?.y ?? motionData.rotation?.gamma ?? 0;
+          const rawZ = motionData.accelerationIncludingGravity?.z ?? motionData.rotation?.alpha ?? 0;
+
+          const mag = Math.sqrt(rawX * rawX + rawY * rawY + rawZ * rawZ);
+          const tiltY = mag > 0.05 ? (rawY / mag) : (Math.abs(rawY) > 2.0 ? (rawY / 9.81) : rawY);
+
+          const reading = new GyroReading({
+            x: rawX,
+            y: tiltY,
+            z: rawZ,
+            timestamp: Date.now()
+          });
+
+          this.currentReading = reading;
+          for (const listener of this.listeners) {
+            listener(reading);
+          }
+        });
+      }
 
       this.isRunning = true;
     } catch {
-      // Fallback for emulator / web environment
       this.isRunning = true;
     }
   }
 
   public async stop(): Promise<void> {
     if (this.subscription) {
-      this.subscription.remove();
+      if (typeof this.subscription.remove === 'function') {
+        this.subscription.remove();
+      }
       this.subscription = null;
     }
     this.isRunning = false;
@@ -68,7 +100,6 @@ export class ExpoMotionSensor implements MotionSensorPort {
     return this.currentReading;
   }
 
-  // Simulation method for testing / web preview
   public simulateReading(yTilt: number): void {
     const reading = new GyroReading({
       x: 0,

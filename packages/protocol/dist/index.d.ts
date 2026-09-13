@@ -346,30 +346,36 @@ export declare const PingMessageSchema: z.ZodObject<{
 } & {
     type: z.ZodLiteral<"ping">;
     playerId: z.ZodOptional<z.ZodString>;
+    clientTime: z.ZodOptional<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
     version: number;
     type: "ping";
     timestamp: number;
     playerId?: string | undefined;
+    clientTime?: number | undefined;
 }, {
     type: "ping";
     version?: number | undefined;
     timestamp?: number | undefined;
     playerId?: string | undefined;
+    clientTime?: number | undefined;
 }>;
 export declare const PongMessageSchema: z.ZodObject<{
     version: z.ZodDefault<z.ZodNumber>;
     timestamp: z.ZodDefault<z.ZodNumber>;
 } & {
     type: z.ZodLiteral<"pong">;
+    clientTime: z.ZodOptional<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
     version: number;
     type: "pong";
     timestamp: number;
+    clientTime?: number | undefined;
 }, {
     type: "pong";
     version?: number | undefined;
     timestamp?: number | undefined;
+    clientTime?: number | undefined;
 }>;
 export type PingMessage = z.infer<typeof PingMessageSchema>;
 export type PongMessage = z.infer<typeof PongMessageSchema>;
@@ -545,16 +551,19 @@ export declare const ClientMessageSchema: z.ZodDiscriminatedUnion<"type", [z.Zod
 } & {
     type: z.ZodLiteral<"ping">;
     playerId: z.ZodOptional<z.ZodString>;
+    clientTime: z.ZodOptional<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
     version: number;
     type: "ping";
     timestamp: number;
     playerId?: string | undefined;
+    clientTime?: number | undefined;
 }, {
     type: "ping";
     version?: number | undefined;
     timestamp?: number | undefined;
     playerId?: string | undefined;
+    clientTime?: number | undefined;
 }>]>;
 export type ClientMessage = z.infer<typeof ClientMessageSchema>;
 export declare const ServerMessageSchema: z.ZodDiscriminatedUnion<"type", [z.ZodObject<{
@@ -681,14 +690,17 @@ export declare const ServerMessageSchema: z.ZodDiscriminatedUnion<"type", [z.Zod
     timestamp: z.ZodDefault<z.ZodNumber>;
 } & {
     type: z.ZodLiteral<"pong">;
+    clientTime: z.ZodOptional<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
     version: number;
     type: "pong";
     timestamp: number;
+    clientTime?: number | undefined;
 }, {
     type: "pong";
     version?: number | undefined;
     timestamp?: number | undefined;
+    clientTime?: number | undefined;
 }>, z.ZodObject<{
     version: z.ZodDefault<z.ZodNumber>;
     timestamp: z.ZodDefault<z.ZodNumber>;

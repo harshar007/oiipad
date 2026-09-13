@@ -7,10 +7,11 @@ import {
   StyleSheet,
   StatusBar,
   ScrollView,
-  SafeAreaView
+  SafeAreaView,
+  Image
 } from 'react-native';
 import { useControllerStore } from '../state/useControllerStore';
-import { Theme } from '../theme/colors';
+import { getTheme } from '../theme/colors';
 
 export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const {
@@ -24,8 +25,12 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     joinRoom,
     connectFromQr,
     setPlayerName,
+    themeMode,
+    toggleTheme,
     error
   } = useControllerStore();
+
+  const theme = getTheme(themeMode);
 
   const [hostInput, setHostInput] = useState(serverHost);
   const [roomInput, setRoomInput] = useState(roomCode);
@@ -50,7 +55,7 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     navigation.navigate('RoomLobby');
   };
 
-  const handleQrConnect = async () => {
+  const handleManualQrConnect = async () => {
     if (!qrInput.trim()) return;
     await setPlayerName(nameInput);
     const success = await connectFromQr(qrInput.trim());
@@ -60,131 +65,224 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={Theme.colors.bgRoot} />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.bgRoot }]}>
+      <StatusBar
+        barStyle={themeMode === 'dark' ? 'light-content' : 'dark-content'}
+        backgroundColor={theme.colors.bgRoot}
+      />
+      
+      {/* Top Navbar Row */}
+      <View style={[styles.navBar, { borderBottomColor: theme.colors.border }]}>
+        <View style={styles.brandGroup}>
+          <Text style={[styles.navBrand, { color: theme.colors.primary }]}>⚡ GYNOO</Text>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.themeToggleBtn, { backgroundColor: theme.colors.bgCard, borderColor: theme.colors.border }]}
+          onPress={toggleTheme}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.themeToggleIcon}>{themeMode === 'dark' ? '☀️' : '🌙'}</Text>
+          <Text style={[styles.themeToggleLabel, { color: theme.colors.textPrimary }]}>
+            {themeMode === 'dark' ? 'Light' : 'Dark'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Google Devs Raven Brand Header */}
+        {/* Google Developer App Brand Header */}
         <View style={styles.header}>
-          <View style={styles.logoBadge}>
-            <Text style={styles.logoGlow}>⚡</Text>
-          </View>
-          <Text style={styles.title}>GYNOO</Text>
-          <Text style={styles.subtitle}>Wireless Motion Controller • oii pad</Text>
-          
-          <View style={[styles.statusBadge, connectionStatus === 'connected' ? styles.statusOnline : styles.statusOffline]}>
-            <View style={[styles.statusDot, connectionStatus === 'connected' ? styles.dotOnline : styles.dotOffline]} />
-            <Text style={styles.statusText}>{connectionStatus.toUpperCase()}</Text>
+          <Image
+            source={require('../../../assets/logo.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
+          <Text style={[styles.title, { color: theme.colors.textPrimary }]}>Gynoo</Text>
+          <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
+            Wireless Mobile Game Controller Platform (oii pad)
+          </Text>
+
+          <View
+            style={[
+              styles.statusBadge,
+              connectionStatus === 'connected'
+                ? { backgroundColor: theme.colors.onlineBg, borderColor: theme.colors.online }
+                : { backgroundColor: theme.colors.offlineBg, borderColor: theme.colors.border }
+            ]}
+          >
+            <View
+              style={[
+                styles.statusDot,
+                { backgroundColor: connectionStatus === 'connected' ? theme.colors.online : theme.colors.textDim }
+              ]}
+            />
+            <Text
+              style={[
+                styles.statusText,
+                { color: connectionStatus === 'connected' ? theme.colors.online : theme.colors.textSecondary }
+              ]}
+            >
+              {connectionStatus === 'connected' ? 'CONNECTED TO PC' : 'READY TO CONNECT'}
+            </Text>
           </View>
         </View>
 
         {error ? (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{error}</Text>
+          <View style={[styles.errorBox, { backgroundColor: theme.colors.errorBg, borderColor: theme.colors.error }]}>
+            <Text style={[styles.errorText, { color: theme.colors.error }]}>{error}</Text>
           </View>
         ) : null}
 
-        {/* Instant QR Quick Connect Card (Top Priority) */}
-        <View style={styles.qrCard}>
+        {/* Primary Action Card: Scan Camera QR Code */}
+        <View style={[styles.scanCard, { backgroundColor: theme.colors.bgCard, borderColor: theme.colors.primary }]}>
           <View style={styles.cardHeaderRow}>
-            <Text style={styles.qrCardTitle}>📷 Quick QR / Terminal Connect</Text>
-            <View style={styles.fastBadge}>
-              <Text style={styles.fastBadgeText}>FAST</Text>
+            <View style={[styles.iconCircle, { backgroundColor: theme.colors.primaryContainer }]}>
+              <Text style={styles.cameraIcon}>📷</Text>
+            </View>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={[styles.scanCardTitle, { color: theme.colors.textPrimary }]}>
+                Instant QR Camera Connect
+              </Text>
+              <Text style={[styles.scanCardDesc, { color: theme.colors.textSecondary }]}>
+                Scan the QR code on your PC server screen
+              </Text>
             </View>
           </View>
-          <Text style={styles.cardDesc}>
-            Enter the QR code link from your PC server terminal (e.g. gynoo://192.168.1.36:8888/BBR1)
-          </Text>
 
-          <TextInput
-            style={styles.qrInput}
-            value={qrInput}
-            onChangeText={setQrInput}
-            placeholder="gynoo://192.168.1.xx:8888/BBR1"
-            placeholderTextColor={Theme.colors.textDim}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-
-          <TouchableOpacity style={styles.qrButton} onPress={handleQrConnect}>
-            <Text style={styles.qrButtonText}>⚡ INSTANT CONNECT</Text>
+          <TouchableOpacity
+            style={[styles.scanButton, { backgroundColor: theme.colors.primary }]}
+            onPress={() => navigation.navigate('QrScanner')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.scanButtonText}>OPEN CAMERA SCANNER 🔍</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Player Profile & Match Setup Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Player Setup</Text>
+        {/* Match Setup & Player Profile Card */}
+        <View style={[styles.card, { backgroundColor: theme.colors.bgCard, borderColor: theme.colors.border }]}>
+          <Text style={[styles.cardTitle, { color: theme.colors.textPrimary }]}>Player & Room Setup</Text>
 
-          <Text style={styles.label}>Racer Name</Text>
+          <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Your Racer Name</Text>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: theme.colors.bgInput,
+                color: theme.colors.textPrimary,
+                borderColor: theme.colors.border
+              }
+            ]}
             value={nameInput}
             onChangeText={setNameInput}
             placeholder="e.g. SpeedRacer"
-            placeholderTextColor={Theme.colors.textDim}
+            placeholderTextColor={theme.colors.textDim}
           />
 
           <TouchableOpacity
             style={styles.toggleManualRow}
             onPress={() => setShowManual(!showManual)}
           >
-            <Text style={styles.toggleManualText}>
-              {showManual ? '▲ Hide Manual Host IP & Room' : '▼ Customize Server IP & Room Code'}
+            <Text style={[styles.toggleManualText, { color: theme.colors.primary }]}>
+              {showManual ? '▲ Hide Direct IP & Room Entry' : '▼ Manual IP & Room Code Connect'}
             </Text>
           </TouchableOpacity>
 
           {showManual ? (
             <View style={styles.manualFields}>
-              <Text style={styles.label}>PC Host IP Address</Text>
+              <Text style={[styles.label, { color: theme.colors.textSecondary }]}>PC Host IP Address</Text>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme.colors.bgInput,
+                    color: theme.colors.textPrimary,
+                    borderColor: theme.colors.border
+                  }
+                ]}
                 value={hostInput}
                 onChangeText={setHostInput}
                 placeholder="192.168.1.xxx"
-                placeholderTextColor={Theme.colors.textDim}
+                placeholderTextColor={theme.colors.textDim}
                 keyboardType="numeric"
               />
 
-              <Text style={styles.label}>Room Code</Text>
+              <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Room Code</Text>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme.colors.bgInput,
+                    color: theme.colors.textPrimary,
+                    borderColor: theme.colors.border
+                  }
+                ]}
                 value={roomInput}
                 onChangeText={(t) => setRoomInput(t.toUpperCase())}
                 placeholder="BBR1"
-                placeholderTextColor={Theme.colors.textDim}
+                placeholderTextColor={theme.colors.textDim}
                 autoCapitalize="characters"
               />
+
+              <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Paste QR Code Link</Text>
+              <View style={styles.pasteRow}>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      flex: 1,
+                      backgroundColor: theme.colors.bgInput,
+                      color: theme.colors.textPrimary,
+                      borderColor: theme.colors.border
+                    }
+                  ]}
+                  value={qrInput}
+                  onChangeText={setQrInput}
+                  placeholder="gynoo://192.168.1.xx:8888/BBR1"
+                  placeholderTextColor={theme.colors.textDim}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  style={[styles.pasteBtn, { backgroundColor: theme.colors.primaryContainer }]}
+                  onPress={handleManualQrConnect}
+                >
+                  <Text style={[styles.pasteBtnText, { color: theme.colors.onPrimaryContainer }]}>Join</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           ) : null}
 
-          <TouchableOpacity style={styles.primaryButton} onPress={handleQuickConnect}>
+          <TouchableOpacity
+            style={[styles.primaryButton, { backgroundColor: theme.colors.primaryDark }]}
+            onPress={handleQuickConnect}
+          >
             <Text style={styles.primaryButtonText}>ENTER GAME LOBBY →</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Developer & Utility Navigation */}
+        {/* Navigation Bottom Row */}
         <View style={styles.actionsRow}>
           <TouchableOpacity
-            style={styles.secondaryButton}
+            style={[styles.secondaryButton, { backgroundColor: theme.colors.bgCard, borderColor: theme.colors.border }]}
             onPress={() => navigation.navigate('FindPc')}
           >
             <Text style={styles.secondaryButtonIcon}>📡</Text>
-            <Text style={styles.secondaryButtonText}>Discover PCs</Text>
+            <Text style={[styles.secondaryButtonText, { color: theme.colors.textPrimary }]}>Discover PCs</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.secondaryButton}
+            style={[styles.secondaryButton, { backgroundColor: theme.colors.bgCard, borderColor: theme.colors.border }]}
             onPress={() => navigation.navigate('GyroTest')}
           >
             <Text style={styles.secondaryButtonIcon}>🎯</Text>
-            <Text style={styles.secondaryButtonText}>Gyro Test</Text>
+            <Text style={[styles.secondaryButtonText, { color: theme.colors.textPrimary }]}>Gyro Test</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.secondaryButton}
+            style={[styles.secondaryButton, { backgroundColor: theme.colors.bgCard, borderColor: theme.colors.border }]}
             onPress={() => navigation.navigate('Settings')}
           >
             <Text style={styles.secondaryButtonIcon}>⚙️</Text>
-            <Text style={styles.secondaryButtonText}>Settings</Text>
+            <Text style={[styles.secondaryButtonText, { color: theme.colors.textPrimary }]}>Settings</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -194,8 +292,40 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: Theme.colors.bgRoot
+    flex: 1
+  },
+  navBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1
+  },
+  brandGroup: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  navBrand: {
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: 2
+  },
+  themeToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: 6
+  },
+  themeToggleIcon: {
+    fontSize: 14
+  },
+  themeToggleLabel: {
+    fontSize: 12,
+    fontWeight: '800'
   },
   scrollContent: {
     padding: 20,
@@ -203,38 +333,25 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
     marginTop: 8
   },
-  logoBadge: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: Theme.colors.bgCard,
-    borderWidth: 2,
-    borderColor: Theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+  logoImage: {
+    width: 68,
+    height: 68,
     marginBottom: 10,
-    shadowColor: Theme.colors.primaryLight,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10
-  },
-  logoGlow: {
-    fontSize: 24
+    borderRadius: 20
   },
   title: {
-    fontSize: 34,
+    fontSize: 32,
     fontWeight: '900',
-    color: Theme.colors.white,
-    letterSpacing: 4
+    letterSpacing: -0.5
   },
   subtitle: {
     fontSize: 13,
-    color: Theme.colors.textMuted,
-    marginTop: 4,
-    fontWeight: '500'
+    marginTop: 2,
+    fontWeight: '500',
+    textAlign: 'center'
   },
   statusBadge: {
     flexDirection: 'row',
@@ -242,16 +359,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 20,
-    marginTop: 12,
+    marginTop: 10,
     borderWidth: 1
-  },
-  statusOnline: {
-    backgroundColor: Theme.colors.onlineBg,
-    borderColor: Theme.colors.online
-  },
-  statusOffline: {
-    backgroundColor: '#1b1328',
-    borderColor: Theme.colors.border
   },
   statusDot: {
     width: 8,
@@ -259,160 +368,128 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     marginRight: 6
   },
-  dotOnline: {
-    backgroundColor: Theme.colors.online
-  },
-  dotOffline: {
-    backgroundColor: Theme.colors.textDim
-  },
   statusText: {
     fontSize: 11,
     fontWeight: '800',
-    color: Theme.colors.white,
-    letterSpacing: 1
+    letterSpacing: 0.5
   },
   errorBox: {
-    backgroundColor: Theme.colors.errorBg,
     padding: 12,
-    borderRadius: 10,
+    borderRadius: 12,
     marginBottom: 16,
     width: '100%',
-    borderWidth: 1,
-    borderColor: Theme.colors.error
+    borderWidth: 1
   },
   errorText: {
-    color: Theme.colors.white,
     fontSize: 13,
     textAlign: 'center',
     fontWeight: '600'
   },
-  qrCard: {
-    backgroundColor: Theme.colors.bgCard,
-    borderRadius: 18,
-    padding: 18,
+  scanCard: {
+    borderRadius: 20,
+    padding: 20,
     width: '100%',
     borderWidth: 1.5,
-    borderColor: Theme.colors.primaryLight,
-    marginBottom: 18,
-    shadowColor: Theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12
+    marginBottom: 16,
+    elevation: 3
   },
   cardHeaderRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6
+    marginBottom: 16
   },
-  qrCardTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: Theme.colors.white
+  iconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
-  fastBadge: {
-    backgroundColor: Theme.colors.primary,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6
+  cameraIcon: {
+    fontSize: 22
   },
-  fastBadgeText: {
-    color: Theme.colors.white,
-    fontSize: 10,
-    fontWeight: '900'
+  scanCardTitle: {
+    fontSize: 17,
+    fontWeight: '800'
   },
-  cardDesc: {
+  scanCardDesc: {
     fontSize: 12,
-    color: Theme.colors.textMuted,
-    marginBottom: 14,
-    lineHeight: 18
+    marginTop: 2
   },
-  qrInput: {
-    backgroundColor: Theme.colors.bgInput,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    color: Theme.colors.white,
-    fontSize: 14,
-    borderWidth: 1,
-    borderColor: Theme.colors.border,
-    marginBottom: 14,
-    fontFamily: 'monospace'
-  },
-  qrButton: {
-    backgroundColor: Theme.colors.primary,
-    borderRadius: 12,
-    paddingVertical: 14,
+  scanButton: {
+    borderRadius: 14,
+    paddingVertical: 15,
     alignItems: 'center',
-    shadowColor: Theme.colors.primaryGlow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8
+    elevation: 4
   },
-  qrButtonText: {
-    color: Theme.colors.white,
+  scanButtonText: {
+    color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '900',
     letterSpacing: 1
   },
   card: {
-    backgroundColor: Theme.colors.bgCard,
-    borderRadius: 18,
-    padding: 18,
+    borderRadius: 20,
+    padding: 20,
     width: '100%',
     borderWidth: 1,
-    borderColor: Theme.colors.border,
-    marginBottom: 18
+    marginBottom: 16,
+    elevation: 2
   },
   cardTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: Theme.colors.white,
     marginBottom: 12
   },
   label: {
     fontSize: 12,
     fontWeight: '700',
-    color: Theme.colors.textSecondary,
     marginBottom: 6,
     marginTop: 8
   },
   input: {
-    backgroundColor: Theme.colors.bgInput,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: Theme.colors.white,
     fontSize: 14,
-    borderWidth: 1,
-    borderColor: Theme.colors.border
+    borderWidth: 1
   },
   toggleManualRow: {
-    paddingVertical: 10,
-    marginTop: 6
+    paddingVertical: 12,
+    marginTop: 4
   },
   toggleManualText: {
-    color: Theme.colors.lavender,
-    fontSize: 12,
-    fontWeight: '600'
+    fontSize: 13,
+    fontWeight: '700'
   },
   manualFields: {
     marginTop: 4
   },
-  primaryButton: {
-    backgroundColor: Theme.colors.bgCardHover,
+  pasteRow: {
+    flexDirection: 'row',
+    gap: 8
+  },
+  pasteBtn: {
     borderRadius: 12,
-    paddingVertical: 14,
+    paddingHorizontal: 18,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  pasteBtnText: {
+    fontWeight: '800',
+    fontSize: 13
+  },
+  primaryButton: {
+    borderRadius: 14,
+    paddingVertical: 15,
     alignItems: 'center',
-    marginTop: 16,
-    borderWidth: 1.5,
-    borderColor: Theme.colors.primaryLight
+    marginTop: 18
   },
   primaryButtonText: {
-    color: Theme.colors.white,
+    color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '800',
-    letterSpacing: 1
+    letterSpacing: 0.5
   },
   actionsRow: {
     flexDirection: 'row',
@@ -422,19 +499,17 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     flex: 1,
-    backgroundColor: Theme.colors.bgCard,
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingVertical: 14,
+    borderRadius: 14,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Theme.colors.border
+    elevation: 1
   },
   secondaryButtonIcon: {
     fontSize: 18,
-    marginBottom: 2
+    marginBottom: 3
   },
   secondaryButtonText: {
-    color: Theme.colors.textSecondary,
     fontSize: 11,
     fontWeight: '700'
   }

@@ -32,10 +32,10 @@ export const GyroTestScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={Theme.colors.bgRoot} />
+      <StatusBar barStyle="dark-content" backgroundColor={Theme.colors.bgRoot} />
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>GYRO DIAGNOSTICS</Text>
+          <Text style={styles.title}>Gyroscope Diagnostics</Text>
           <Text style={styles.subtitle}>Real-time sensor telemetry & filter pipeline</Text>
         </View>
 
@@ -56,7 +56,7 @@ export const GyroTestScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                 {
                   left: liveSteering < 0 ? `${(liveSteering + 1) * 50}%` : '50%',
                   width: `${Math.abs(liveSteering) * 50}%`,
-                  backgroundColor: liveSteering < 0 ? Theme.colors.brake : Theme.colors.primaryLight
+                  backgroundColor: liveSteering < 0 ? Theme.colors.brake : Theme.colors.primary
                 }
               ]}
             />
@@ -110,8 +110,8 @@ export const GyroTestScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
         </View>
 
         {/* Recalibrate & Done */}
-        <TouchableOpacity style={styles.recalibrateBtn} onPress={calibrate} activeOpacity={0.8}>
-          <Text style={styles.recalibrateBtnText}>🎯 RECALIBRATE NEUTRAL</Text>
+        <TouchableOpacity style={styles.recalibrateBtn} onPress={calibrate} activeOpacity={0.85}>
+          <Text style={styles.recalibrateBtnText}>🎯 RECALIBRATE NEUTRAL POSITION</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
@@ -137,30 +137,33 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '900',
-    color: Theme.colors.white,
-    letterSpacing: 2
+    color: Theme.colors.textPrimary
   },
   subtitle: {
-    fontSize: 12,
-    color: Theme.colors.textMuted,
-    marginTop: 4
+    fontSize: 13,
+    color: Theme.colors.textSecondary,
+    marginTop: 2
   },
   gaugeCard: {
     backgroundColor: Theme.colors.bgCard,
-    borderRadius: 18,
+    borderRadius: 20,
     padding: 20,
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: Theme.colors.primaryLight,
-    marginBottom: 16
+    borderColor: Theme.colors.primary,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2
   },
   cardHeader: {
     fontSize: 12,
     fontWeight: '800',
-    color: Theme.colors.lavender,
+    color: Theme.colors.primary,
     textTransform: 'uppercase',
-    marginBottom: 6,
-    letterSpacing: 0.5
+    marginBottom: 6
   },
   bigValue: {
     fontSize: 44,
@@ -169,16 +172,16 @@ const styles = StyleSheet.create({
     marginVertical: 4
   },
   neutralColor: { color: Theme.colors.textMuted },
-  activeColor: { color: Theme.colors.white },
+  activeColor: { color: Theme.colors.textPrimary },
   gaugeSub: {
     fontSize: 11,
-    color: Theme.colors.textDim,
+    color: Theme.colors.textMuted,
     marginBottom: 14
   },
   barTrack: {
     width: '100%',
     height: 16,
-    backgroundColor: Theme.colors.bgInput,
+    backgroundColor: Theme.colors.bgSubtle,
     borderRadius: 8,
     overflow: 'hidden',
     position: 'relative',
@@ -191,7 +194,7 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 2,
-    backgroundColor: Theme.colors.borderActive
+    backgroundColor: Theme.colors.primary
   },
   barFill: {
     position: 'absolute',
@@ -200,18 +203,23 @@ const styles = StyleSheet.create({
   },
   sectionCard: {
     backgroundColor: Theme.colors.bgCard,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1.5,
+    borderRadius: 18,
+    padding: 18,
+    borderWidth: 1,
     borderColor: Theme.colors.border,
-    marginBottom: 14
+    marginBottom: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1
   },
   metricRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#25123d'
+    borderBottomColor: Theme.colors.borderSubtle
   },
   metricLabel: {
     color: Theme.colors.textSecondary,
@@ -219,13 +227,13 @@ const styles = StyleSheet.create({
     fontWeight: '600'
   },
   metricVal: {
-    color: Theme.colors.lavender,
+    color: Theme.colors.primary,
     fontSize: 13,
     fontFamily: 'monospace',
     fontWeight: '700'
   },
   metricValHighlight: {
-    color: Theme.colors.white,
+    color: Theme.colors.textPrimary,
     fontSize: 13,
     fontFamily: 'monospace',
     fontWeight: '900'
@@ -236,10 +244,11 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     marginTop: 6,
-    shadowColor: Theme.colors.primaryGlow,
+    shadowColor: Theme.colors.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4
   },
   recalibrateBtnText: {
     color: Theme.colors.white,
@@ -251,7 +260,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14
   },
   backBtnText: {
-    color: Theme.colors.textDim,
+    color: Theme.colors.textMuted,
     fontSize: 14,
     fontWeight: '700'
   }

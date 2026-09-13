@@ -98,6 +98,13 @@ class WebSocketMessageHandler {
                     });
                     // Broadcast updated room state to all players in the room
                     await this.broadcastRoomState(result.room.code.value);
+                    console.log(`[PLAYER_EVENT] ${JSON.stringify({
+                        event: 'join',
+                        slot: result.player.slot,
+                        name: result.player.name,
+                        id: result.player.id.value,
+                        gameProfile: result.room.gameProfile.value
+                    })}`);
                 }
                 catch (err) {
                     this.sendToSocket(socket, {
@@ -165,6 +172,7 @@ class WebSocketMessageHandler {
                 this.sendToSocket(socket, {
                     version: protocol_1.PROTOCOL_VERSION,
                     type: 'pong',
+                    clientTime: msg.clientTime,
                     timestamp: Date.now()
                 });
                 break;
@@ -179,6 +187,10 @@ class WebSocketMessageHandler {
             this.socketToPlayerMap.delete(socket);
             this.playerToSocketMap.delete(session.playerId);
             await this.broadcastRoomState(session.roomCode);
+            console.log(`[PLAYER_EVENT] ${JSON.stringify({
+                event: 'leave',
+                id: session.playerId
+            })}`);
         }
     }
     async broadcastRoomState(roomCode) {

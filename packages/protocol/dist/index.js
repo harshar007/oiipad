@@ -80,10 +80,12 @@ exports.RoomStateMessageSchema = exports.BaseMessageSchema.extend({
 // Heartbeat Messages
 exports.PingMessageSchema = exports.BaseMessageSchema.extend({
     type: zod_1.z.literal('ping'),
-    playerId: zod_1.z.string().optional()
+    playerId: zod_1.z.string().optional(),
+    clientTime: zod_1.z.number().optional()
 });
 exports.PongMessageSchema = exports.BaseMessageSchema.extend({
-    type: zod_1.z.literal('pong')
+    type: zod_1.z.literal('pong'),
+    clientTime: zod_1.z.number().optional()
 });
 // Error Message
 exports.ErrorMessageSchema = exports.BaseMessageSchema.extend({

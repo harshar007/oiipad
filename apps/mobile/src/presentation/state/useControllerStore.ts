@@ -16,6 +16,7 @@ import { AsyncStorageSettingsRepository } from '../../infrastructure/storage/Asy
 import { UdpPcDiscoveryRepository } from '../../infrastructure/discovery/UdpPcDiscoveryRepository';
 import {
   CalibrateSteering,
+  AutoCalibrateSteering,
   StartController
 } from '../../application/useCases/ControllerUseCases';
 import {
@@ -41,6 +42,7 @@ const discoveryRepo = new UdpPcDiscoveryRepository();
 
 // Use Cases
 const calibrateUseCase = new CalibrateSteering(motionSensor, steeringProcessor);
+const autoCalibrateUseCase = new AutoCalibrateSteering(motionSensor, steeringProcessor);
 const startControllerUseCase = new StartController(motionSensor, steeringProcessor, wsClient);
 const connectToPcUseCase = new ConnectToPc(wsClient);
 const disconnectFromPcUseCase = new DisconnectFromPc(wsClient);
@@ -66,6 +68,10 @@ export interface ControllerStoreState {
   discoveredPcs: DiscoveredPc[];
   isReady: boolean;
   error: string | null;
+  latencyMs: number;
+  themeMode: 'light' | 'dark';
+  toggleTheme: () => void;
+  claimScreen: () => void;
 
   // Steering & Sensors
   steeringConfig: SteeringConfiguration;
@@ -95,6 +101,7 @@ export interface ControllerStoreState {
   setReady: (ready: boolean) => void;
   selectGameProfile: (profileId: string) => void;
   calibrate: () => void;
+  autoCalibrate: () => Promise<void>;
   startController: () => Promise<void>;
   stopController: () => Promise<void>;
   setButtonState: (updates: Partial<ControllerStoreState['buttonStates']>) => void;
@@ -157,8 +164,14 @@ export const useControllerStore = create<ControllerStoreState>((set, get) => {
     }
   });
 
+  // Listen to live latency updates
+  wsClient.onLatencyChange((latency) => {
+    set({ latencyMs: latency });
+  });
+
   return {
     connectionStatus: 'disconnected',
+    latencyMs: 1,
     serverHost: '127.0.0.1',
     serverPort: 8888,
     roomCode: 'BBR1',
@@ -170,6 +183,30 @@ export const useControllerStore = create<ControllerStoreState>((set, get) => {
     discoveredPcs: [],
     isReady: false,
     error: null,
+    themeMode: 'light',
+
+    toggleTheme: () => {
+      set((state) => ({
+        themeMode: state.themeMode === 'light' ? 'dark' : 'light'
+      }));
+    },
+
+    claimScreen: () => {
+      // Firmly pulse Select / Confirm / Action keys to claim split-screen in Beach Buggy Racing
+      get().setButtonState({
+        powerUp: true,
+        buttons: { A: true, START: true, SELECT: true, ENTER: true, JOIN: true }
+      });
+      startControllerUseCase.sendImmediate();
+
+      setTimeout(() => {
+        get().setButtonState({
+          powerUp: false,
+          buttons: { A: false, START: false, SELECT: false, ENTER: false, JOIN: false }
+        });
+        startControllerUseCase.sendImmediate();
+      }, 250);
+    },
 
     steeringConfig: SteeringConfiguration.default(),
     liveSteering: 0.0,
@@ -258,9 +295,23 @@ export const useControllerStore = create<ControllerStoreState>((set, get) => {
       });
     },
 
+    autoCalibrate: async () => {
+      const reading = await autoCalibrateUseCase.execute(4, 50);
+      set({
+        neutralOffset: steeringProcessor.getNeutralOffset(),
+        rawGyro: reading,
+        liveSteering: 0.0
+      });
+    },
+
     startController: async () => {
       if (get().isControllerRunning) return;
       set({ isControllerRunning: true });
+
+      // Run automatic zero-calibration on start
+      setTimeout(() => {
+        get().autoCalibrate().catch(() => {});
+      }, 100);
 
       await startControllerUseCase.execute(
         () => get().playerId || '',
@@ -289,6 +340,7 @@ export const useControllerStore = create<ControllerStoreState>((set, get) => {
           buttons: updates.buttons ? { ...state.buttonStates.buttons, ...updates.buttons } : state.buttonStates.buttons
         }
       }));
+      startControllerUseCase.sendImmediate();
     },
 
     updateSteeringConfig: async (updates) => {

@@ -9,11 +9,13 @@
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
+    "test": "jest",
     "lint": "npm run lint --workspaces --if-present",
     "server:start": "npm run start --workspace=apps/pc-server",
     "server:dev": "npm run dev --workspace=apps/pc-server",
-    "mobile:start": "npm run start --workspace=apps/mobile"
+    "server:gui": "python server_gui.py",
+    "mobile:start": "npm run start --workspace=apps/mobile",
+    "mobile:clear": "npx expo start -c apps/mobile"
   },
   "keywords": [
     "gynoo",

@@ -104,11 +104,13 @@ export type RoomStateMessage = z.infer<typeof RoomStateMessageSchema>;
 // Heartbeat Messages
 export const PingMessageSchema = BaseMessageSchema.extend({
   type: z.literal('ping'),
-  playerId: z.string().optional()
+  playerId: z.string().optional(),
+  clientTime: z.number().optional()
 });
 
 export const PongMessageSchema = BaseMessageSchema.extend({
-  type: z.literal('pong')
+  type: z.literal('pong'),
+  clientTime: z.number().optional()
 });
 
 export type PingMessage = z.infer<typeof PingMessageSchema>;

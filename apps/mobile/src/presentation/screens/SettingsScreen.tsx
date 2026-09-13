@@ -21,10 +21,10 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={Theme.colors.bgRoot} />
+      <StatusBar barStyle="dark-content" backgroundColor={Theme.colors.bgRoot} />
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>STEERING TUNING</Text>
+          <Text style={styles.title}>Controller Tuning</Text>
           <Text style={styles.subtitle}>Calibrate sensitivity and dead zone response curves</Text>
         </View>
 
@@ -124,12 +124,12 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           <Switch
             value={steeringConfig.invert}
             onValueChange={(val) => updateSteeringConfig({ invert: val })}
-            trackColor={{ false: '#261245', true: Theme.colors.primaryDark }}
-            thumbColor={steeringConfig.invert ? Theme.colors.white : Theme.colors.lavender}
+            trackColor={{ false: Theme.colors.border, true: Theme.colors.primaryContainer }}
+            thumbColor={steeringConfig.invert ? Theme.colors.primary : '#FFFFFF'}
           />
         </View>
 
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.85}>
           <Text style={styles.backBtnText}>SAVE & CLOSE</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -152,13 +152,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '900',
-    color: Theme.colors.white,
-    letterSpacing: 2
+    color: Theme.colors.textPrimary
   },
   subtitle: {
-    fontSize: 12,
-    color: Theme.colors.textMuted,
-    marginTop: 4
+    fontSize: 13,
+    color: Theme.colors.textSecondary,
+    marginTop: 2
   },
   section: {
     marginBottom: 22
@@ -170,7 +169,7 @@ const styles = StyleSheet.create({
     marginBottom: 10
   },
   valHighlight: {
-    color: Theme.colors.white,
+    color: Theme.colors.primary,
     fontWeight: '900'
   },
   chipsRow: {
@@ -182,21 +181,26 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.bgCard,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: Theme.colors.border
+    borderColor: Theme.colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1
   },
   chipActive: {
-    backgroundColor: Theme.colors.bgCardHover,
-    borderColor: Theme.colors.primaryGlow
+    backgroundColor: Theme.colors.primaryContainer,
+    borderColor: Theme.colors.primary
   },
   chipText: {
-    color: Theme.colors.textMuted,
+    color: Theme.colors.textSecondary,
     fontWeight: '800',
     fontSize: 13
   },
   chipTextActive: {
-    color: Theme.colors.white,
+    color: Theme.colors.onPrimaryContainer,
     fontWeight: '900'
   },
   toggleRow: {
@@ -204,14 +208,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: Theme.colors.bgCard,
-    padding: 16,
-    borderRadius: 14,
+    padding: 18,
+    borderRadius: 18,
     borderWidth: 1.5,
     borderColor: Theme.colors.border,
-    marginBottom: 24
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1
   },
   toggleTitle: {
-    color: Theme.colors.white,
+    color: Theme.colors.textPrimary,
     fontSize: 14,
     fontWeight: '800'
   },
@@ -225,10 +234,11 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderRadius: 14,
     alignItems: 'center',
-    shadowColor: Theme.colors.primaryGlow,
+    shadowColor: Theme.colors.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4
   },
   backBtnText: {
     color: Theme.colors.white,

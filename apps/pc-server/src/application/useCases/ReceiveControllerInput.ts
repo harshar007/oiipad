@@ -66,5 +66,18 @@ export class ReceiveControllerInput {
       // Direct hardware/virtual gamepad update targeting the player's specific slot (1-4)
       await this.virtualGamepad.update(targetPlayer.slot, controllerState, gameProfile);
     }
+
+    // Telemetry output for PC Server GUI (Player Slots 1-4)
+    console.log(`[TELEMETRY] ${JSON.stringify({
+      slot: targetPlayer.slot,
+      steer: controllerState.steering.value,
+      accel: controllerState.accelerate,
+      brake: controllerState.brake,
+      handbrake: controllerState.handbrake,
+      boost: controllerState.boost,
+      powerUp: controllerState.powerUp,
+      buttons: controllerState.buttons,
+      profile: gameProfile?.id?.value || 'bbr1'
+    })}`);
   }
 }
